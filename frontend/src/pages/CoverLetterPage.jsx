@@ -527,30 +527,6 @@ const CoverLetterPage = () => {
         </Paper>
       </Fade>
 
-      {/* Next Steps */}
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Fade in={true} timeout={2000}>
-          <div>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              size="large"
-              onClick={() => navigate('/feedback')}
-              sx={{ mr: 2 }}
-            >
-              Get Resume Feedback
-            </Button>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              size="large"
-              onClick={() => navigate('/dashboard')}
-            >
-              Go to Dashboard
-            </Button>
-          </div>
-        </Fade>
-      </Box>
 
       {/* Copy Success Notification */}
       <Snackbar

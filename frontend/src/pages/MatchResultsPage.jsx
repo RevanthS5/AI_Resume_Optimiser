@@ -444,7 +444,7 @@ const MatchResultsPage = () => {
       </Paper>
 
       {/* Skills Category Analysis */}
-      <Paper elevation={3} sx={{ p: 4, my: 4, borderRadius: 2 }}>
+      {/* <Paper elevation={3} sx={{ p: 4, my: 4, borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom>
           Skills Category Analysis
         </Typography>
@@ -470,7 +470,7 @@ const MatchResultsPage = () => {
             </Box>
           ))}
         </Box>
-      </Paper>
+      </Paper> */}
 
       {/* Skills Comparison */}
       <Grid container spacing={4}>
@@ -528,49 +528,6 @@ const MatchResultsPage = () => {
         </Grid>
       </Grid>
 
-      {/* Strengths and Improvement Areas */}
-      <Grid container spacing={4} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <StrengthIcon color="success" sx={{ mr: 1 }} />
-                Your Strengths
-              </Typography>
-              <List>
-                {currentMatch.strengths.map((strength, index) => (
-                  <ListItem key={index}>
-                    <ListItemText primary={strength} />
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                <WeaknessIcon color="error" sx={{ mr: 1 }} />
-                Areas to Improve
-              </Typography>
-              {currentMatch.improvementAreas && currentMatch.improvementAreas.length > 0 ? (
-                <List>
-                  {currentMatch.improvementAreas.map((area, index) => (
-                    <ListItem key={index}>
-                      <ListItemText primary={area} />
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No specific improvement areas were identified. Your resume appears to match well with this job's requirements.
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
 
       {/* Next Steps */}
       <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
