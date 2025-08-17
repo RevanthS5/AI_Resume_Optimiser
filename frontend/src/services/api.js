@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import axiosWithAuth from '../utils/axiosWithAuth';
 // Create an axios instance with default config
 const api = axios.create({
   baseURL: '/api',
@@ -80,17 +80,20 @@ export const jobService = {
         'Content-Type': 'multipart/form-data',
       },
     };
-    const response = await api.post('/job/parse/file', formData, config);
+    // Use axiosWithAuth to ensure session ID is included
+    const response = await axiosWithAuth.post('/job/parse/file', formData, config);
     return response.data;
   },
   
   parseJobText: async (text) => {
-    const response = await api.post('/job/parse/text', { text });
+    // Use axiosWithAuth to ensure session ID is included
+    const response = await axiosWithAuth.post('/job/parse/text', { text });
     return response.data;
   },
   
   getJobs: async () => {
-    const response = await api.get('/history/jobs');
+    // Use axiosWithAuth to ensure session ID is included
+    const response = await axiosWithAuth.get('/history/jobs');
     return response.data;
   },
 };
