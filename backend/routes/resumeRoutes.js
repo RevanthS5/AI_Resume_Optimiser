@@ -4,20 +4,11 @@ const multer = require('multer');
 const path = require('path');
 
 // Import controllers
-const { parseResume } = require('../controllers/resumeController');
+const { parseResume, getUserResumes, getResumeById } = require('../controllers/resumeController');
+const { optionalAuth } = require('../middlewares/sessionAuth');
 
-// Configure multer for file uploads
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Use /tmp directory in production (Vercel), uploads/ in development
-    const uploadPath = process.env.NODE_ENV === 'production' ? '/tmp' : 'uploads/';
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+// Configure multer for S3 upload (memory storage)
+const storage = multer.memoryStorage();
 
 // Filter for PDF and DOCX files only
 const fileFilter = (req, file, cb) => {
@@ -39,16 +30,13 @@ const upload = multer({
   }
 });
 
-// Create uploads directory if it doesn't exist
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-const uploadPath = process.env.NODE_ENV === 'production' ? '/tmp' : 'uploads/';
-if (!fs.existsSync(uploadPath) && process.env.NODE_ENV !== 'production') {
-  // No need to create /tmp in production as it already exists in Vercel
-  fs.mkdirSync(uploadPath);
-}
+// Route to parse resume - supports both authenticated users and guest sessions
+router.post('/parse', optionalAuth, upload.single('resume'), parseResume);
 
-// Route to parse resume
-router.post('/parse', upload.single('resume'), parseResume);
+// Route to get all user resumes - supports both authenticated users and guest sessions
+router.get('/', optionalAuth, getUserResumes);
+
+// Route to get specific resume by ID - supports both authenticated users and guest sessions
+router.get('/:id', optionalAuth, getResumeById);
 
 module.exports = router;

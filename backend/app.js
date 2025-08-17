@@ -47,11 +47,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+// Check S3 connection on startup
+const { checkS3Connection } = require('./utils/s3Utils');
+
+// Verify S3 connectivity on server startup
+if (process.env.NODE_ENV !== 'test') {
+  console.log('[SERVER] Initializing AWS S3 connection...');
+  checkS3Connection().then(isConnected => {
+    if (isConnected) {
+      console.log('[SERVER] 🚀 AWS S3 storage is ready for file uploads');
+      console.log('[SERVER] ✅ All file upload endpoints are operational');
+    } else {
+      console.warn('[SERVER] ⚠️  S3 connection failed - file uploads may not work');
+      console.warn('[SERVER] 📋 Please check your AWS configuration in .env file');
+    }
+  }).catch(error => {
+    console.error('[SERVER] ❌ S3 connection check failed:', error.message);
+    console.error('[SERVER] 📋 File uploads will not work until S3 is configured');
+  });
 }
 
 // MongoDB Connection
@@ -87,13 +100,43 @@ app.use('/api/auth', authRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/keywords', keywordRoutes);
 
+// Serve static files from React build (for production)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+}
+
 // Basic route
 app.get('/', (req, res) => {
-  res.json({ message: 'AI Resume Optimizer API is running' });
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  } else {
+    res.json({ message: 'AI Resume Optimizer API is running' });
+  }
 });
 
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
+
+// Handle React routing - serve index.html for non-API routes (AFTER error handling)
+if (process.env.NODE_ENV === 'production') {
+  // Add specific routes that should serve the React app
+  const reactRoutes = ['/login', '/dashboard', '/optimize', '/history', '/profile'];
+  
+  reactRoutes.forEach(route => {
+    app.get(route, (req, res) => {
+      res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+    });
+  });
+  
+  // Handle any remaining non-API routes with a middleware
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api') && !req.path.includes('.')) {
+      res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+    } else {
+      next();
+    }
+  });
+}
 
 module.exports = app;

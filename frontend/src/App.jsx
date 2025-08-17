@@ -6,6 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase/firebaseConfig';
 import { setUser } from './features/auth/authSlice';
 import axiosWithAuth from './utils/axiosWithAuth';
+import sessionManager from './utils/sessionManager';
 
 // Layout components
 import Header from './components/layout/Header';
@@ -64,12 +65,21 @@ const App = () => {
           
           dispatch(setUser(userData));
           
+          // Initialize user session (converting from guest if needed)
+          const existingSession = sessionManager.getSessionData();
+          if (existingSession?.isGuest) {
+            console.log('Converting guest session to user session');
+            sessionManager.convertGuestToUser(userData);
+          } else {
+            sessionManager.initUserSession(userData);
+          }
+          
           // Verify token with backend
           if (location.pathname !== '/login' && location.pathname !== '/register') {
             try {
               // The axiosWithAuth interceptor will automatically attach the token
               console.log('Verifying token with backend...');
-              const response = await axiosWithAuth.post('/api/auth/verify-token');
+              const response = await axiosWithAuth.post('/auth/verify-token');
               console.log('Token verification successful:', response.data);
             } catch (error) {
               console.error('Token verification failed:', error);
@@ -77,9 +87,10 @@ const App = () => {
             }
           }
         } else if (!loading) {
-          // Clear user from Redux when logged out
-          console.log('Clearing user from Redux state');
+          // Clear user from Redux when logged out, but maintain guest session
+          console.log('User logged out, initializing guest session');
           dispatch(setUser(null));
+          sessionManager.initGuestSession();
         }
         
         // Only set initializing to false once we're done with auth check
@@ -95,6 +106,15 @@ const App = () => {
     
     handleAuthStateChange();
   }, [user, loading, dispatch, location.pathname]);
+  
+  // Initialize session on app start
+  useEffect(() => {
+    console.log('Initializing session manager...');
+    if (!user && !loading) {
+      // If no user is logged in, ensure we have a guest session
+      sessionManager.initGuestSession();
+    }
+  }, [user, loading]);
   
   // Determine which container to use based on route
   const getContainer = (element) => {

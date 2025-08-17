@@ -4,19 +4,13 @@ const multer = require('multer');
 const path = require('path');
 
 // Import controllers
-const { parseJobDescription } = require('../controllers/jobController');
+const { parseJobDescription, getUserJobs, getJobById } = require('../controllers/jobController');
+const { optionalAuth } = require('../middlewares/sessionAuth');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+// Configure multer for S3 upload (memory storage)
+const storage = multer.memoryStorage();
 
-// Filter for PDF and DOCX files only
+// Filter for PDF, DOCX, and TXT files
 const fileFilter = (req, file, cb) => {
   const allowedFileTypes = ['.pdf', '.docx', '.txt'];
   const ext = path.extname(file.originalname).toLowerCase();
@@ -36,14 +30,14 @@ const upload = multer({
   }
 });
 
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
+// Routes to parse job description - supports both authenticated users and guest sessions
+router.post('/parse/file', optionalAuth, upload.single('jobDescription'), parseJobDescription);
+router.post('/parse/text', optionalAuth, parseJobDescription);
 
-// Routes to parse job description
-router.post('/parse/file', upload.single('jobDescription'), parseJobDescription);
-router.post('/parse/text', parseJobDescription);
+// Route to get all user job descriptions - supports both authenticated users and guest sessions
+router.get('/', optionalAuth, getUserJobs);
+
+// Route to get specific job description by ID - supports both authenticated users and guest sessions
+router.get('/:id', optionalAuth, getJobById);
 
 module.exports = router;

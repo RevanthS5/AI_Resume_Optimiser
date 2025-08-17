@@ -1,9 +1,10 @@
-const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const Resume = require('../models/Resume');
+const User = require('../models/User');
 const openai = require('../config/openai');
+const { uploadToS3, downloadAndExtractText } = require('../utils/s3Utils');
 
 /**
  * Parse a resume file (PDF or DOCX) and extract structured information
@@ -23,19 +24,27 @@ const parseResume = async (req, res) => {
     }
 
     console.log(`[Resume Parser] File received: ${req.file.originalname}, Size: ${req.file.size} bytes`);
-    const filePath = req.file.path;
     const fileExtension = path.extname(req.file.originalname).toLowerCase();
     
-    // Extract text from file based on file type
+    // Generate identifier for S3 upload (user ID or session ID)
+    const uploadIdentifier = req.user?.firebaseUid || req.sessionId || 'anonymous';
+    
+    // Upload file to S3
+    console.log('[Resume Parser] Uploading file to S3');
+    const s3Result = await uploadToS3(
+      req.file.buffer, 
+      req.file.originalname, 
+      uploadIdentifier, 
+      'resume'
+    );
+    
+    // Extract text from file buffer based on file type
     let text = '';
     
     if (fileExtension === '.pdf') {
       console.log('[Resume Parser] Processing PDF file');
-      // Parse PDF
-      const dataBuffer = fs.readFileSync(filePath);
-      console.log(`[Resume Parser] PDF buffer size: ${dataBuffer.length} bytes`);
       try {
-        const pdfData = await pdfParse(dataBuffer);
+        const pdfData = await pdfParse(req.file.buffer);
         text = pdfData.text;
         console.log(`[Resume Parser] PDF parsed successfully, extracted ${text.length} characters`);
       } catch (pdfError) {
@@ -44,9 +53,8 @@ const parseResume = async (req, res) => {
       }
     } else if (fileExtension === '.docx') {
       console.log('[Resume Parser] Processing DOCX file');
-      // Parse DOCX
       try {
-        const result = await mammoth.extractRawText({ path: filePath });
+        const result = await mammoth.extractRawText({ buffer: req.file.buffer });
         text = result.value;
         console.log(`[Resume Parser] DOCX parsed successfully, extracted ${text.length} characters`);
       } catch (docxError) {
@@ -69,7 +77,11 @@ const parseResume = async (req, res) => {
 
       // Create a new resume document in the database
       console.log('[Resume Parser] Creating resume document in database');
+      console.log('[Resume Parser] Session type:', req.sessionType, 'Session identifier:', req.sessionIdentifier);
+      
       const resume = new Resume({
+        user: req.user?._id || null,
+        sessionId: req.sessionId || null,
         name: structuredData.name,
         email: structuredData.email,
         phone: structuredData.phone,
@@ -85,7 +97,14 @@ const parseResume = async (req, res) => {
         publications: structuredData.publications || [],
         rawText: text,
         fileName: req.file.originalname,
-        fileType: fileExtension
+        fileType: fileExtension,
+        // S3 metadata
+        s3Key: s3Result.key,
+        s3Location: s3Result.location,
+        s3Bucket: s3Result.bucket,
+        fileSize: req.file.size,
+        uploadDate: new Date(),
+        lastAccessed: new Date()
       });
 
       // Save the resume to the database
@@ -93,9 +112,15 @@ const parseResume = async (req, res) => {
       await resume.save();
       console.log(`[Resume Parser] Resume saved with ID: ${resume._id}`);
 
-      // Delete the uploaded file after processing
-      fs.unlinkSync(filePath);
-      console.log(`[Resume Parser] Deleted temporary file: ${filePath}`);
+      // Update user's resumes array if user is authenticated
+      if (req.user?._id) {
+        console.log('[Resume Parser] Updating user resumes array');
+        await User.findByIdAndUpdate(
+          req.user._id,
+          { $addToSet: { resumes: resume._id } }
+        );
+        console.log('[Resume Parser] User resumes array updated');
+      }
 
       // Return the structured resume data
       console.log('[Resume Parser] Sending successful response to client');
@@ -267,6 +292,97 @@ const extractResumeData = async (text) => {
   }
 };
 
+/**
+ * Get all resumes for a user or session
+ * @route GET /api/resume/
+ * @access Public (with session support)
+ */
+const getUserResumes = async (req, res) => {
+  try {
+    let query = {};
+    
+    if (req.user) {
+      // Authenticated user
+      query.user = req.user._id;
+    } else if (req.sessionId) {
+      // Guest session
+      query.sessionId = req.sessionId;
+      query.user = null;
+    } else {
+      // No user or session
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
+    }
+    
+    const resumes = await Resume.find(query)
+      .sort({ createdAt: -1 })
+      .select('title fileName skills experience education summary createdAt s3Key s3Url');
+    
+    res.status(200).json({
+      success: true,
+      data: resumes
+    });
+  } catch (error) {
+    console.error('Error getting user resumes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving resumes',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get a specific resume by ID
+ * @route GET /api/resume/:id
+ * @access Public (with session support)
+ */
+const getResumeById = async (req, res) => {
+  try {
+    const resumeId = req.params.id;
+    let query = { _id: resumeId };
+    
+    if (req.user) {
+      // Authenticated user - check ownership
+      query.user = req.user._id;
+    } else if (req.sessionId) {
+      // Guest session - check session ownership
+      query.sessionId = req.sessionId;
+      query.user = null;
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - no session or authentication'
+      });
+    }
+    
+    const resume = await Resume.findOne(query);
+    
+    if (!resume) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resume not found or access denied'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: resume
+    });
+  } catch (error) {
+    console.error('Error getting resume by ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving resume',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
-  parseResume
+  parseResume,
+  getUserResumes,
+  getResumeById
 };

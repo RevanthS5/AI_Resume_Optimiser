@@ -1,9 +1,10 @@
-const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const JobDescription = require('../models/JobDescription');
+const User = require('../models/User');
 const openai = require('../config/openai');
+const { uploadToS3 } = require('../utils/s3Utils');
 
 /**
  * Parse a job description file or text and extract structured information
@@ -13,34 +14,44 @@ const openai = require('../config/openai');
 const parseJobDescription = async (req, res) => {
   try {
     let text = '';
+    let s3Result = null;
+    let fileInfo = null;
     
     // Check if job description was uploaded as a file or text
     if (req.file) {
-      const filePath = req.file.path;
       const fileExtension = path.extname(req.file.originalname).toLowerCase();
+      const userId = req.user?.uid || 'anonymous';
       
-      // Extract text from file based on file type
+      // Upload file to S3
+      console.log('[Job Parser] Uploading file to S3');
+      s3Result = await uploadToS3(
+        req.file.buffer, 
+        req.file.originalname, 
+        userId, 
+        'job'
+      );
+      
+      fileInfo = {
+        fileName: req.file.originalname,
+        fileType: fileExtension,
+        fileSize: req.file.size
+      };
+      
+      // Extract text from file buffer based on file type
       if (fileExtension === '.pdf') {
-        // Parse PDF
-        const dataBuffer = fs.readFileSync(filePath);
-        const pdfData = await pdfParse(dataBuffer);
+        const pdfData = await pdfParse(req.file.buffer);
         text = pdfData.text;
       } else if (fileExtension === '.docx') {
-        // Parse DOCX
-        const result = await mammoth.extractRawText({ path: filePath });
+        const result = await mammoth.extractRawText({ buffer: req.file.buffer });
         text = result.value;
       } else if (fileExtension === '.txt') {
-        // Read text file
-        text = fs.readFileSync(filePath, 'utf8');
+        text = req.file.buffer.toString('utf8');
       } else {
         return res.status(400).json({
           success: false,
           message: 'Unsupported file format. Please upload a PDF, DOCX, or TXT file.'
         });
       }
-      
-      // Delete the uploaded file after processing
-      fs.unlinkSync(filePath);
     } else if (req.body.text) {
       // Use text directly from request body
       // Handle both string and object formats
@@ -64,17 +75,40 @@ const parseJobDescription = async (req, res) => {
 
     // Create a new job description document in the database
     const jobDescription = new JobDescription({
+      user: req.user?._id || null,
+      sessionId: req.sessionId || null,
       title: structuredData.title,
       company: structuredData.company,
       location: structuredData.location,
       description: structuredData.description,
       requiredSkills: structuredData.requiredSkills,
       preferredSkills: structuredData.preferredSkills,
-      rawText: text
+      rawText: text,
+      // S3 metadata (only if file was uploaded)
+      ...(fileInfo && {
+        fileName: fileInfo.fileName,
+        fileType: fileInfo.fileType,
+        fileSize: fileInfo.fileSize
+      }),
+      ...(s3Result && {
+        s3Key: s3Result.key,
+        s3Location: s3Result.location,
+        s3Bucket: s3Result.bucket
+      }),
+      uploadDate: new Date(),
+      lastAccessed: new Date()
     });
 
     // Save the job description to the database
     await jobDescription.save();
+
+    // Update user's jobs array if user is authenticated
+    if (req.user?._id) {
+      await User.findByIdAndUpdate(
+        req.user._id,
+        { $addToSet: { jobs: jobDescription._id } }
+      );
+    }
 
     // Return the structured job description data
     res.status(200).json({
@@ -184,6 +218,97 @@ const extractJobData = async (text) => {
   }
 };
 
+/**
+ * Get all job descriptions for a user or session
+ * @route GET /api/job/
+ * @access Public (with session support)
+ */
+const getUserJobs = async (req, res) => {
+  try {
+    let query = {};
+    
+    if (req.user) {
+      // Authenticated user
+      query.user = req.user._id;
+    } else if (req.sessionId) {
+      // Guest session
+      query.sessionId = req.sessionId;
+      query.user = null;
+    } else {
+      // No user or session
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
+    }
+    
+    const jobs = await JobDescription.find(query)
+      .sort({ createdAt: -1 })
+      .select('title company location jobType skills requirements responsibilities benefits createdAt s3Key s3Url');
+    
+    res.status(200).json({
+      success: true,
+      data: jobs
+    });
+  } catch (error) {
+    console.error('Error getting user jobs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving job descriptions',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get a specific job description by ID
+ * @route GET /api/job/:id
+ * @access Public (with session support)
+ */
+const getJobById = async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    let query = { _id: jobId };
+    
+    if (req.user) {
+      // Authenticated user - check ownership
+      query.user = req.user._id;
+    } else if (req.sessionId) {
+      // Guest session - check session ownership
+      query.sessionId = req.sessionId;
+      query.user = null;
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - no session or authentication'
+      });
+    }
+    
+    const job = await JobDescription.findOne(query);
+    
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job description not found or access denied'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: job
+    });
+  } catch (error) {
+    console.error('Error getting job by ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving job description',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
-  parseJobDescription
+  parseJobDescription,
+  getUserJobs,
+  getJobById
 };

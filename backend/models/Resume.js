@@ -6,6 +6,11 @@ const ResumeSchema = new mongoose.Schema({
     ref: 'User',
     // Not required initially to allow non-authenticated users to use basic features
   },
+  sessionId: {
+    type: String,
+    // Used for guest users to track their data across browser sessions
+    // Either user or sessionId must be present
+  },
   name: {
     type: String,
     required: true
@@ -83,10 +88,46 @@ const ResumeSchema = new mongoose.Schema({
   fileType: {
     type: String
   },
+  // S3 storage metadata
+  s3Key: {
+    type: String,
+    required: true
+  },
+  s3Location: {
+    type: String,
+    required: true
+  },
+  s3Bucket: {
+    type: String,
+    required: true
+  },
+  fileSize: {
+    type: Number
+  },
+  uploadDate: {
+    type: Date,
+    default: Date.now
+  },
+  lastAccessed: {
+    type: Date,
+    default: Date.now
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
+});
+
+// Add compound index for efficient queries by user or session
+ResumeSchema.index({ user: 1 });
+ResumeSchema.index({ sessionId: 1 });
+
+// Validation to ensure either user or sessionId is present
+ResumeSchema.pre('save', function(next) {
+  if (!this.user && !this.sessionId) {
+    return next(new Error('Either user or sessionId must be provided'));
+  }
+  next();
 });
 
 module.exports = mongoose.model('Resume', ResumeSchema);
