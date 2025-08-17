@@ -19,7 +19,8 @@ app.use(cors({
     : 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'session-id']
+  allowedHeaders: ['Content-Type', 'Authorization', 'session-id', 'Session-Id', 'sessionid', 'SessionId', 'X-Requested-With'],
+  exposedHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Allow-Headers', 'Content-Type']
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
