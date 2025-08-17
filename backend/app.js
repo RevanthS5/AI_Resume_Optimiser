@@ -13,15 +13,21 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://ai-resume-optimiser-frontend.onrender.com', 'https://ai-resume-optimiser.onrender.com', 'https://ai-resume-optimiser-kh3f.onrender.com'] 
-    : 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'session-id', 'Session-Id', 'sessionid', 'SessionId', 'X-Requested-With'],
-  exposedHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Allow-Headers', 'Content-Type']
-}));
+// More permissive CORS for debugging
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,POST,PUT,DELETE');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, session-id, Session-Id, sessionid, SessionId');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).send();
+    return;
+  }
+  next();
+});
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
