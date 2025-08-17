@@ -101,22 +101,22 @@ export const jobService = {
 // Match API services
 export const matchService = {
   compareResumeJob: async (resumeId, jobId) => {
-    const response = await api.post('/match/compare', { resumeId, jobId });
+    const response = await axiosWithAuth.post('/match/compare', { resumeId, jobId });
     return response.data;
   },
   
   generateCoverLetter: async (params) => {
-    const response = await api.post('/match/letter/generate', params);
+    const response = await axiosWithAuth.post('/match/letter/generate', params);
     return response.data;
   },
   
   getResumeFeedback: async (matchId) => {
-    const response = await api.post('/match/feedback', { matchId });
+    const response = await axiosWithAuth.post('/match/feedback', { matchId });
     return response.data;
   },
   
   getMatches: async () => {
-    const response = await api.get('/history/matches');
+    const response = await axiosWithAuth.get('/history/matches');
     return response.data;
   },
 };
