@@ -79,9 +79,15 @@ const parseResume = async (req, res) => {
       console.log('[Resume Parser] Creating resume document in database');
       console.log('[Resume Parser] Session type:', req.sessionType, 'Session identifier:', req.sessionIdentifier);
       
+      // Generate a temporary session ID if neither user nor sessionId is available
+      // This ensures the model validation passes while maintaining compatibility with the dual-flow system
+      const tempSessionId = (!req.user && !req.sessionId) ? 
+        `temp-${Date.now()}-${Math.random().toString(36).substring(2, 15)}` : 
+        req.sessionId;
+      
       const resume = new Resume({
         user: req.user?._id || null,
-        sessionId: req.sessionId || null,
+        sessionId: tempSessionId || null,
         name: structuredData.name,
         email: structuredData.email,
         phone: structuredData.phone,

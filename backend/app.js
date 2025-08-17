@@ -55,15 +55,15 @@ if (process.env.NODE_ENV !== 'test') {
   console.log('[SERVER] Initializing AWS S3 connection...');
   checkS3Connection().then(isConnected => {
     if (isConnected) {
-      console.log('[SERVER] 🚀 AWS S3 storage is ready for file uploads');
-      console.log('[SERVER] ✅ All file upload endpoints are operational');
+      console.log('[SERVER]  AWS S3 storage is ready for file uploads');
+      console.log('[SERVER]  All file upload endpoints are operational');
     } else {
-      console.warn('[SERVER] ⚠️  S3 connection failed - file uploads may not work');
-      console.warn('[SERVER] 📋 Please check your AWS configuration in .env file');
+      console.warn('[SERVER]   S3 connection failed - file uploads may not work');
+      console.warn('[SERVER] Please check your AWS configuration in .env file');
     }
   }).catch(error => {
-    console.error('[SERVER] ❌ S3 connection check failed:', error.message);
-    console.error('[SERVER] 📋 File uploads will not work until S3 is configured');
+    console.error('[SERVER] S3 connection check failed:', error.message);
+    console.error('[SERVER] File uploads will not work until S3 is configured');
   });
 }
 

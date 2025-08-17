@@ -31,7 +31,7 @@ const upload = multer({
 });
 
 // Route to parse resume - supports both authenticated users and guest sessions
-router.post('/parse', optionalAuth, upload.single('resume'), parseResume);
+router.post('/parse', upload.single('resume'), parseResume);
 
 // Route to get all user resumes - supports both authenticated users and guest sessions
 router.get('/', optionalAuth, getUserResumes);
