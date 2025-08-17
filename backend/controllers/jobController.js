@@ -74,6 +74,12 @@ const parseJobDescription = async (req, res) => {
     const structuredData = await extractJobData(text);
 
     // Create a new job description document in the database
+    // If neither user nor sessionId is provided, create a temporary sessionId
+    if (!req.user?._id && !req.sessionId) {
+      req.sessionId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      console.log('Generated temporary sessionId for job description:', req.sessionId);
+    }
+    
     const jobDescription = new JobDescription({
       user: req.user?._id || null,
       sessionId: req.sessionId || null,
