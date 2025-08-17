@@ -31,8 +31,10 @@ const upload = multer({
 });
 
 // Routes to parse job description - supports both authenticated users and guest sessions
-router.post('/parse/file', optionalAuth, upload.single('jobDescription'), parseJobDescription);
-router.post('/parse/text', optionalAuth, parseJobDescription);
+router.post('/parse/file', upload.single('jobDescription'), parseJobDescription);
+router.post('/parse/text', parseJobDescription);
+
+
 
 // Route to get all user job descriptions - supports both authenticated users and guest sessions
 router.get('/', optionalAuth, getUserJobs);
