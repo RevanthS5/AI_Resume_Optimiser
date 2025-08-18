@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axiosWithAuth from '../utils/axiosWithAuth';
+import { axiosWithAuth } from '../utils/axiosWithAuth';
+
 
 // Helper to save to localStorage
 const saveToLocalStorage = (key, value) => {
