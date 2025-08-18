@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axiosWithAuth from '../utils/axiosWithAuth';
 
 // Helper to save to localStorage
 const saveToLocalStorage = (key, value) => {
@@ -41,7 +41,8 @@ export const fetchKeywordInsights = createAsyncThunk(
     try {
       console.log(`Fetching keyword insights with resumeId: ${resumeId} and jobId: ${jobId}`);
       
-      const response = await axios.post('/api/keywords/analyze', {
+      // Use axiosWithAuth instead of axios for consistent session handling
+      const response = await axiosWithAuth.post('/api/keywords/analyze', {
         resumeId,
         jobId
       });
@@ -66,7 +67,8 @@ export const fetchKeywordHistory = createAsyncThunk(
   'keyword/fetchKeywordHistory',
   async ({ resumeId, jobId }, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/keywords/history/${resumeId}/${jobId}`);
+      // Use axiosWithAuth instead of axios for consistent session handling
+      const response = await axiosWithAuth.get(`/api/keywords/history/${resumeId}/${jobId}`);
       
       return response.data.data;
     } catch (error) {
