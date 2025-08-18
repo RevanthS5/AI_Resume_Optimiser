@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { axiosWithAuth } from '../utils/axiosWithAuth';
-
+import axios from 'axios';
+import sessionManager from '../utils/sessionManager';
 
 // Helper to save to localStorage
 const saveToLocalStorage = (key, value) => {
@@ -42,11 +42,17 @@ export const fetchKeywordInsights = createAsyncThunk(
     try {
       console.log(`Fetching keyword insights with resumeId: ${resumeId} and jobId: ${jobId}`);
       
-      // Use axiosWithAuth instead of axios for consistent session handling
-      const response = await axiosWithAuth.post('/api/keywords/analyze', {
+      // Get headers with session ID
+      const headers = {};
+      const sessionData = sessionManager.getSessionData();
+      if (sessionData?.sessionId) {
+        headers['X-Session-ID'] = sessionData.sessionId;
+      }
+      
+      const response = await axios.post('/api/keywords/analyze', {
         resumeId,
         jobId
-      });
+      }, { headers });
       
       return response.data.data;
     } catch (error) {
@@ -68,8 +74,16 @@ export const fetchKeywordHistory = createAsyncThunk(
   'keyword/fetchKeywordHistory',
   async ({ resumeId, jobId }, { rejectWithValue }) => {
     try {
-      // Use axiosWithAuth instead of axios for consistent session handling
-      const response = await axiosWithAuth.get(`/api/keywords/history/${resumeId}/${jobId}`);
+      // Get headers with session ID
+      const headers = {};
+      const sessionData = sessionManager.getSessionData();
+      if (sessionData?.sessionId) {
+        headers['X-Session-ID'] = sessionData.sessionId;
+      }
+      
+      const response = await axios.get(`/api/keywords/history/${resumeId}/${jobId}`, 
+        { headers }
+      );
       
       return response.data.data;
     } catch (error) {
