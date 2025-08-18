@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import sessionManager from '../utils/sessionManager';
 
 // Helper to save to localStorage
 const saveToLocalStorage = (key, value) => {
@@ -24,6 +23,22 @@ const loadFromLocalStorage = (key) => {
   }
 };
 
+// Simple function to get session ID directly from localStorage
+const getSessionId = () => {
+  try {
+    const sessionKey = 'ai_resume_optimizer_session';
+    const sessionData = localStorage.getItem(sessionKey);
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      return parsed.sessionId || null;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting session ID:', error);
+    return null;
+  }
+};
+
 // Async thunk for fetching keyword insights
 export const fetchKeywordInsights = createAsyncThunk(
   'keyword/fetchKeywordInsights',
@@ -42,11 +57,11 @@ export const fetchKeywordInsights = createAsyncThunk(
     try {
       console.log(`Fetching keyword insights with resumeId: ${resumeId} and jobId: ${jobId}`);
       
-      // Get headers with session ID
+      // Get session ID directly from localStorage
       const headers = {};
-      const sessionData = sessionManager.getSessionData();
-      if (sessionData?.sessionId) {
-        headers['X-Session-ID'] = sessionData.sessionId;
+      const sessionId = getSessionId();
+      if (sessionId) {
+        headers['X-Session-ID'] = sessionId;
       }
       
       const response = await axios.post('/api/keywords/analyze', {
@@ -74,11 +89,11 @@ export const fetchKeywordHistory = createAsyncThunk(
   'keyword/fetchKeywordHistory',
   async ({ resumeId, jobId }, { rejectWithValue }) => {
     try {
-      // Get headers with session ID
+      // Get session ID directly from localStorage
       const headers = {};
-      const sessionData = sessionManager.getSessionData();
-      if (sessionData?.sessionId) {
-        headers['X-Session-ID'] = sessionData.sessionId;
+      const sessionId = getSessionId();
+      if (sessionId) {
+        headers['X-Session-ID'] = sessionId;
       }
       
       const response = await axios.get(`/api/keywords/history/${resumeId}/${jobId}`, 
