@@ -64,7 +64,8 @@ export const fetchKeywordInsights = createAsyncThunk(
         headers['X-Session-ID'] = sessionId;
       }
       
-      const response = await axios.post('/api/keywords/analyze', {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || '/api';
+      const response = await axios.post(`${apiBaseUrl}/keywords/analyze`, {
         resumeId,
         jobId
       }, { headers });
