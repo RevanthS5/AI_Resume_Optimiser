@@ -2,7 +2,7 @@
 
 An intelligent resume optimization platform that leverages AI to help job seekers improve their resumes, match them with relevant job descriptions, and generate tailored cover letters.
 
-## 🚀 Features
+##  Features
 
 - **Resume Parsing & Analysis**: Upload and parse PDF/Word resumes with intelligent content extraction
 - **AI-Powered Optimization**: Get suggestions to improve your resume using OpenAI GPT
@@ -12,7 +12,7 @@ An intelligent resume optimization platform that leverages AI to help job seeker
 - **User Dashboard**: Track optimization history and manage multiple resumes
 - **Firebase Authentication**: Secure user registration and login system
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 ### Frontend
 - **React 18** - Modern UI framework
@@ -32,7 +32,7 @@ An intelligent resume optimization platform that leverages AI to help job seeker
 - **PDF-Parse & Mammoth** - Document parsing
 - **JWT** - Token-based authentication
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Before running this project, make sure you have the following installed:
 
@@ -42,7 +42,7 @@ Before running this project, make sure you have the following installed:
 - **Firebase Project** with Authentication enabled
 - **OpenAI API Key**
 
-## 📦 Installation
+##  Installation
 
 ### 1. Clone the Repository
 ```bash
@@ -112,7 +112,7 @@ REACT_APP_FIREBASE_APP_ID=your_firebase_app_id
 REACT_APP_API_URL=http://localhost:5000/api
 ```
 
-## 🚀 Running the Application
+##  Running the Application
 
 ### Start the Backend Server
 
@@ -140,7 +140,7 @@ The frontend application will start on `http://localhost:3000`
 
 Open your browser and navigate to `http://localhost:3000`
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 AI_Resume_Optimiser/
@@ -175,7 +175,7 @@ AI_Resume_Optimiser/
 └── README.md
 ```
 
-## 🔧 Development Commands
+##  Development Commands
 
 ### Backend Commands
 ```bash
@@ -208,7 +208,7 @@ npm test
 npm run eject
 ```
 
-## 🌐 API Endpoints
+## API Endpoints
 
 The backend provides the following main API endpoints:
 
@@ -219,7 +219,7 @@ The backend provides the following main API endpoints:
 - **Match Results**: `/api/matches/*`
 - **User History**: `/api/history/*`
 
-## 🔐 Environment Variables Guide
+## Environment Variables Guide
 
 ### Required Firebase Setup
 1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
@@ -237,30 +237,8 @@ The backend provides the following main API endpoints:
 2. Create a database named `ai-resume-optimizer`
 3. Update the connection string in your backend `.env` file
 
-## 🚦 Usage
 
-1. **Register/Login**: Create an account or sign in with Google
-2. **Upload Resume**: Upload your resume in PDF or Word format
-3. **Parse Resume**: The system will extract and analyze your resume content
-4. **Add Job Description**: Enter a job description you're interested in
-5. **Get Matching Results**: View compatibility scores and recommendations
-6. **Optimize Resume**: Get AI-powered suggestions for improvement
-7. **Generate Cover Letter**: Create a tailored cover letter for the position
-8. **View History**: Track all your optimization sessions in the dashboard
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and commit: `git commit -m 'Add feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Important Notes
+##  Important Notes
 
 - Ensure both frontend and backend servers are running for full functionality
 - The frontend is configured to proxy API requests to the backend on port 5000
@@ -268,7 +246,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Keep your API keys secure and never commit them to version control
 - The application requires internet connectivity for OpenAI and Firebase services
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Common Issues
 
@@ -278,14 +256,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 4. **OpenAI API**: Verify your OpenAI API key is valid and has sufficient credits
 5. **Port Conflicts**: Ensure ports 3000 and 5000 are available on your system
 
-### Getting Help
-
-If you encounter issues:
-1. Check the browser console for frontend errors
-2. Check the backend server logs for API errors
-3. Verify all environment variables are set correctly
-4. Ensure all services (MongoDB, Firebase, OpenAI) are properly configured
 
 ---
 
-Happy optimizing! 🎯
